@@ -751,6 +751,9 @@ impl Hash for FloatWrapper {
 pub enum Expr {
     /// Integer constant.
     IntegerConstant(Box<(INT, Position)>),
+
+    /// Integer constant.
+    AddressConstant(Box<(u16, Position)>),
     /// Floating-point constant.
     #[cfg(not(feature = "no_float"))]
     FloatConstant(Box<FloatWrapper>),
@@ -894,6 +897,7 @@ impl Expr {
             Self::FloatConstant(x) => x.1,
 
             Self::IntegerConstant(x) => x.1,
+            Self::AddressConstant(x) => x.1,
             Self::CharConstant(x) => x.1,
             Self::StringConstant(x) => x.1,
             Self::FnPointer(x) => x.1,
@@ -926,6 +930,7 @@ impl Expr {
             Self::FloatConstant(x) => x.1 = new_pos,
 
             Self::IntegerConstant(x) => x.1 = new_pos,
+            Self::AddressConstant(x) => x.1 = new_pos,
             Self::CharConstant(x) => x.1 = new_pos,
             Self::StringConstant(x) => x.1 = new_pos,
             Self::FnPointer(x) => x.1 = new_pos,
@@ -981,6 +986,7 @@ impl Expr {
             Self::FloatConstant(_) => true,
 
             Self::IntegerConstant(_)
+            | Self::AddressConstant(_)
             | Self::CharConstant(_)
             | Self::StringConstant(_)
             | Self::FnPointer(_)
@@ -1014,6 +1020,7 @@ impl Expr {
             Self::FloatConstant(_) => false,
 
             Self::IntegerConstant(_)
+            | Self::AddressConstant(_)
             | Self::CharConstant(_)
             | Self::FnPointer(_)
             | Self::In(_)
@@ -1631,6 +1638,7 @@ fn parse_primary(
 
     let mut root_expr = match token {
         Token::IntegerConstant(x) => Expr::IntegerConstant(Box::new((x, settings.pos))),
+        Token::AddressConstant(x) => Expr::AddressConstant(Box::new((x, settings.pos))),
         #[cfg(not(feature = "no_float"))]
         Token::FloatConstant(x) => Expr::FloatConstant(Box::new(FloatWrapper(x, settings.pos))),
         Token::CharConstant(c) => Expr::CharConstant(Box::new((c, settings.pos))),

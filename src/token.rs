@@ -154,6 +154,8 @@ impl fmt::Debug for Position {
 pub enum Token {
     /// An `INT` constant.
     IntegerConstant(INT),
+    /// An `INT` constant.
+    AddressConstant(u16),
     /// A `FLOAT` constant.
     ///
     /// Reserved under the `no_float` feature.
@@ -329,6 +331,7 @@ impl Token {
 
         match self {
             IntegerConstant(i) => i.to_string().into(),
+            AddressConstant(a) => format!("${:x}", a).into(),
             #[cfg(not(feature = "no_float"))]
             FloatConstant(f) => f.to_string().into(),
             StringConstant(_) => "string".into(),
@@ -1092,6 +1095,38 @@ fn get_next_token_inner(
                         start_pos,
                     ));
                 }
+            }
+
+            // Address Constant
+            ('$', _) => {
+                let mut result: StaticVec<char> = Default::default();
+
+                while let Some(next_char) = stream.peek_next() {
+                    match next_char {
+                        '0'..='9' | '_' => {
+                            result.push(next_char);
+                            eat_next(stream, pos);
+                        }
+                        c if is_hex_char(c) => {
+                            result.push(next_char);
+                            eat_next(stream, pos);
+                        }
+                        _ => break,
+                    }
+                }
+
+                // Parse number
+                let out: String = result.iter().filter(|&&c| c != '_').collect();
+                let num = u16::from_str_radix(&out, 16).map(Token::AddressConstant);
+
+                return Some((
+                    num.unwrap_or_else(|_| {
+                        Token::LexError(Box::new(LERR::MalformedNumber(
+                            result.into_iter().collect(),
+                        )))
+                    }),
+                    start_pos,
+                ));
             }
 
             // letter or underscore ...
